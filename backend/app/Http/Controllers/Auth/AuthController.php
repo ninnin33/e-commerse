@@ -16,6 +16,9 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'role' => 'nullable|string|in:user,admin',
+            'status' => 'nullable|string|in:active,inactive',
+            'phone' => 'nullable|string|max:20',
         ]);
 
         if ($validated->fails()) {
@@ -31,7 +34,10 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request['name'],
             'email' => $request['email'],
-            'password' => $request['password']
+            'password' => $request['password'],
+            'role' => $request['role'] ?? 'user',
+            'status' => $request['status'] ?? 'active',
+            'phone' => $request['phone'] ?? null
 
         ]);
 
@@ -86,20 +92,22 @@ class AuthController extends Controller
         }
     }
     
-    public function logout(Request $req){
-        try{
-            $req->user()->currentAccessToken()->delete();
-            return response()->json([
-                'status' => true,
-                'message' => 'User logged out successfully'
-            ], 200);
-        }catch(\Exception $e){
+    public function logout(Request $request){
+        $user = $request->user();
+
+        if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage()
-            ], 500);
+                'message' => 'Unauthenticated'
+            ], 401);
         }
-        
+
+        $user->currentAccessToken()->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'User logged out successfully'
+        ], 200);
     }
 
 }
